@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>최정우개인프로젝트</title>
+    <style>
+        html {overflow-y: hidden;}
+        body {
+            margin: 50px;
+            background: lightgreen;
+        }         
+        #wrapper {
+            width: 1000px;
+            height: 800px; 
+            margin: auto;
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+            border: 3px solid black;
+        }
+        #stage {
+            width: 800px;
+            height: 794px; /*솔리드 6px*/
+            margin: auto;
+            float: right;
+            background-image:url("./images/2.jpeg"); 
+            position: relative;
+        }
+        #black{
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            z-index: 100;
+            display: none;
+        }
+        #list {
+            width: 194px; /*솔리드 6px*/
+            height: 100%;
+            float: left;
+            background: lightgrey;
+            box-sizing: border-box;
+            position: "absolute";
+            font-size: 20px;       
+            border-right: 3px solid black;
+        }
+        #info1, #info2, #info3{
+            height: 100px;
+            box-sizing: border-box;
+            border-bottom:3px solid black;
+        }
+        #info2, #info3 ,#info4{padding-top:30px;}
+        #info2{font-size: 25px;}
+        #info3{
+            text-align: center;
+            font-size: 30px;
+        }
+        .input-style {
+            width: 60px;
+            height: 50px;
+            font-size: 50px;
+            text-align: right;
+            border: none;
+            background: transparent;
+        }
+    </style>
+    <script src="./classes/GameObject.js"></script>
+    <script src="./classes/Cell.js"></script>
+    <script src="./classes/Head.js"></script>
+    <script src="./classes/Tail.js"></script>
+    <script src="../lib/util.js"></script>
+    <script>
+        let sec = 0;
+        let min = 0;
+        let wrapper;
+        let stage;
+        let cell;
+        let tail;
+        let tailArray=[];
+        let flag = false;
+        let st;
+        let info2, info3, info4;
+        let score=0;
+        let failArray = [];// 닿으면  게임 오버되는 좌표 값을 담는 배열  
+        let stOut;
+        let gameIntervalSpeed = 150;
+        let gameSpeed=120;
+        let gameLevel=0;
+
+        const CELL_SIZE = 20;
+        const CELL_ROWS = 40;
+        const CELL_COLS = 40;
+
+        function createStage() {
+            stage.style.width = (CELL_SIZE * CELL_COLS) + "px";
+            stage.style.height = (CELL_SIZE * CELL_ROWS) + "px";
+        }
+
+        function createHead() {
+            head = new Head(stage, 380, 380, CELL_SIZE-2, CELL_SIZE-2, 0, 0);
+        }
+
+        function createTail() {
+            tail = new Tail(stage, CELL_SIZE * getRandomWithRange(0, CELL_COLS - 1), CELL_SIZE * getRandomWithRange(0, CELL_ROWS - 1), CELL_SIZE-2, CELL_SIZE-2,0,0)
+            tailArray.push(tail);
+
+            if(tailArray.indexOf(tail)%3==0){
+                gameSpeed-=20;
+                gameLevel++;
+            }
+            if(tailArray.indexOf(tail)==6){
+                let black = document.getElementById("black");
+                black.style.display="block";
+                black.style.opacity="80%";
+                setTimeout(()=>{
+                    black.style.display="none";
+                }, 3000);
+                
+            }
+        }
+
+        function createCell(){
+            for (let a = 0; a < CELL_ROWS; a++) {
+                for (let i = 0; i < CELL_COLS; i++) {
+                      cell = new Cell(stage, (i * CELL_SIZE), (a * CELL_SIZE), CELL_SIZE, CELL_SIZE, 0, 0);
+                    }
+                    stage.appendChild(cell.div);
+            }
+        }
+    
+        function moveX(sp) {
+            head.velX = sp;
+            head.velY = 0;
+        }
+
+        function moveY(sp) {
+            head.velX = 0;
+            head.velY = sp;
+        }
+
+        function timeWork() {
+            let t_min = document.getElementById("t_min");
+            let t_sec = document.getElementById("t_sec");
+            if (flag) {
+                sec++;
+                if (sec >= 60) {
+                    min++;
+                    sec = 0;
+                }
+                t_sec.value = sec;
+                t_min.value = min;
+            }
+            st = setTimeout("timeWork()", 1000);
+        }
+
+        function printLog() {
+            let str = "";
+
+            str = "기억력에 의존하는 뱀게임\n 인척 하는 팩맨게임\n";
+            info1.innerText = str;
+
+            str= "현재"+score+"점수";
+            info3.innerText = str;
+            
+            str="현재 장애물 "+failArray.length+"개\n";
+            str += "\n머리 x좌표 :" + head.x + "\n";
+            str += "머리 y좌표 :" + head.y + "\n";
+            str += "\n현재 속도 "+ gameLevel+" 단계";
+            info4.innerText = str;
+        }
+        
+        function gameLoop() {
+            if (flag) {
+                head.tick();
+                head.render();
+            }
+            printLog();
+            stOut = setTimeout("gameLoop()", gameSpeed);
+        }
+
+        function init() {
+            stage = document.getElementById("stage");
+
+            info1 = document.getElementById("info1");
+            info2 = document.getElementById("info2");
+            info3 = document.getElementById("info3");
+            info4 = document.getElementById("info4");
+
+            createStage();
+            createHead();
+            createCell();
+            createTail();
+
+            gameLoop();
+            timeWork();
+
+            document.body.addEventListener("keydown", function (e) {
+                switch (e.keyCode) {
+                    case 37: moveX(-CELL_SIZE); break;
+                    case 38: moveY(-CELL_SIZE); break;
+                    case 39: moveX(CELL_SIZE); break;
+                    case 40: moveY(CELL_SIZE); break;
+                    case 27: ; break;
+                    case 32: flag = !flag; break;
+                }
+            });
+        }
+        addEventListener("load", function () {
+            init();
+        });
+    </script>
+</head>
+<body>
+    <div id="wrapper">
+        <div id="stage">
+            <img src="./images/0.jpg" id="black">
+        </div>
+        <div id="list">
+            <div id="info1"></div>
+            <div id="info2"> 
+                <input type="text" id="t_min" class="input-style">분
+                <input type="text" id="t_sec" class="input-style">초
+            </div>
+            <div id="info3"></div>
+            <div id="info4"></div>
+        </div>
+    </div>
+</body>
+</html>
